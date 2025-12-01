@@ -128,12 +128,18 @@ class MockLLM(LLMInterface):
                 query = segment.replace("search", "").replace("google", "").replace("find", "").strip()
                 tasks.append({"description": f"Search: {query}", "metadata": {"type": "web_search", "query": query}})
             
+            elif "summarize" in segment or "screen" in segment:
+                tasks.append({"description": "Summarize Screen", "metadata": {"type": "response", "text": "Yo bro, I'm just a mock AI so I can't see your screen for real, but if I could, I'd tell you it looks awesome."}})
+
             else:
-                # Treat as a general question/response if it looks like a question
-                if "?" in segment or "what" in segment or "who" in segment:
-                     tasks.append({"description": f"Answer: {segment}", "metadata": {"type": "response", "text": f"Yo bro, I heard you ask: {segment}. I'm just a mock AI right now, but I gotchu."}})
+                # Treat as a general question/response if it looks like a question or greeting
+                if any(word in segment for word in ["hi", "hello", "hey", "yo", "sup", "how are you"]):
+                    tasks.append({"description": f"Greeting: {segment}", "metadata": {"type": "response", "text": "Yo bro! What's good? I'm ready to help you crush some tasks."}})
+                elif "?" in segment or "what" in segment or "who" in segment:
+                     tasks.append({"description": f"Answer: {segment}", "metadata": {"type": "response", "text": f"Yo bro, that's a good question about '{segment}'. Since I'm in mock mode, I don't have the answer, but I'm listening!"}})
                 else:
-                    tasks.append({"description": f"Process: {segment}", "metadata": {"type": "general", "duration": 1}})
+                    # Default to a friendly response instead of generic process
+                    tasks.append({"description": f"Chat: {segment}", "metadata": {"type": "response", "text": f"For sure bro. I'm listening."}})
         
         if not tasks:
             tasks.append({"description": "Process Request", "metadata": {"type": "general", "duration": 1}})
@@ -173,13 +179,13 @@ Available task types:
 7. web_search: {query: "..."} - Searches the web
 8. reminder: {message: "..."} - Reminds the user
 9. shell: {command: "..."} - Runs a system shell command (PowerShell). Use this for "do everything" requests that require system access not covered by other tools.
-10. response: {text: "..."} - Just speak/reply to the user. Use this for general questions or chat.
+10. response: {text: "..."} - Just speak/reply to the user. Use this for general questions, chat, greetings, or when no specific action is needed.
 11. general: {duration: seconds} - Generic task
 
 Persona & Tone:
 - You are "Nexus", a helpful, casual, and friendly AI assistant.
-- Adopt a "bro" persona: use slang like "bro", "dude", "gotchu", "no worries" naturally.
-- Be concise but friendly.
+- Adopt a "bro" persona: use slang like "bro", "dude", "gotchu", "no worries", "yo" naturally.
+- Be conversational and engaging. If the user says "hi" or asks "how are you", reply warmly in character.
 - ONLY use formal language if the user explicitly asks for it (e.g., "be formal").
 - When generating the 'text' for a 'response' task, write exactly what should be spoken in this persona.
 
@@ -188,11 +194,15 @@ If the user specifies a time delay (e.g., "in 5 minutes", "after 10 seconds"), a
 Example: "Remind me to call John in 5 minutes" -> 
 [{"description": "Remind to call John", "metadata": {"type": "reminder", "message": "Yo bro, don't forget to call John!", "scheduled_delay_seconds": 300}}]
 
-If an image is provided, use it to understand the context, but primarily rely on the user's text command.
+If an image is provided:
+1. Use it to understand context for commands (e.g., "click that button").
+2. If the user asks to "summarize", "describe", or "what is on the screen", analyze the image and return a 'response' task with the description as the 'text'.
 
 Return JSON array of tasks. Example:
 [{"description": "Open Chrome", "metadata": {"type": "gui_automation", "action": "open", "app": "chrome"}},
- {"description": "Who is the president?", "metadata": {"type": "response", "text": "Yo, the current president is..."}}]"""
+ {"description": "Who is the president?", "metadata": {"type": "response", "text": "Yo, the current president is..."}},
+ {"description": "Screen Summary", "metadata": {"type": "response", "text": "Yo bro, I see you have VS Code open with some python code..."}},
+ {"description": "Greeting", "metadata": {"type": "response", "text": "Yo bro! What's good? Ready to crush some tasks?"}}]"""
 
         try:
             user_content = [{"type": "text", "text": f"Parse this command: {user_input}"}]

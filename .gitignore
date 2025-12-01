@@ -1,0 +1,4 @@
+universal_agent/.env
+universal_agent/universal_agent.db
+**/__pycache__/
+*.pyc
